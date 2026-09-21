@@ -1,0 +1,18 @@
+# Build-Ergebnisse
+bin/
+obj/
+build/
+dist/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+.vscode/
+
+# Sonstiges
+*.log
+Thumbs.db
+desktop.ini

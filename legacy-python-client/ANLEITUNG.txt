@@ -1,0 +1,50 @@
+Voice Push-to-Talk - Installation & Verwaltung
+==============================================
+
+Voraussetzung: Windows mit Python 3.11+ (python.org, bei der Installation
+"Add python.exe to PATH" anhaken). Der Rechner muss das Gateway erreichen:
+http://127.0.0.1:8055
+
+SCHNELLSTART
+1. Diesen Ordner an einen festen Ort kopieren (z.B. C:\voice-ptt).
+2. Installer.bat doppelklicken.
+3. Im Menue [1] Installieren waehlen. Am Ende wirst du gefragt, ob
+   Autostart aktiviert und der Client gestartet werden soll.
+
+Installer.bat - Menue:
+  [1] Installieren / Reparieren  -> legt venv an, installiert Pakete,
+                                    registriert in "Apps & Features"
+  [2] Autostart aktivieren       -> startet den Client kuenftig bei Anmeldung
+  [3] Autostart deaktivieren
+  [4] Client jetzt starten
+  [5] Deinstallieren             -> Autostart weg, venv weg, Registrierung weg,
+                                    optional den ganzen Ordner loeschen
+  [0] Beenden
+
+Bedienung des Clients:
+  Taste F9 halten, sprechen, loslassen -> Text wird ins aktive Fenster gesetzt.
+  Tray-Icon: Weboberflaeche, Mikrofon-Auswahl, Ton-Lautstaerke, Korrektur, Beenden.
+
+Deinstallieren:
+  - Entweder Installer.bat -> [5], oder
+  - Windows-Einstellungen -> Apps -> "Voice Push-to-Talk" -> Deinstallieren,
+    oder uninstall.bat direkt doppelklicken.
+
+Einstellungen: config.json (gateway_url, hotkey, input_device, beep_volume ...)
+Mikrofone auflisten: mikrofone.bat
+
+Whisper-Endpunkt konfigurieren (config.json)
+--------------------------------------------
+gateway_url    Adresse des Whisper-Dienstes.
+endpoint_type  "gateway" = unser Dienst auf der Spark inkl. LLM-Korrektur (Standard).
+               "openai"  = beliebiger lokaler Whisper-Server mit OpenAI-kompatibler
+                           Schnittstelle (/v1/audio/transcriptions), z.B. faster-whisper-
+                           server / Speaches. Nur Transkription, keine LLM-Korrektur.
+model          nur bei endpoint_type=openai: Modellname, den der lokale Server erwartet.
+language       optional, z.B. "de"; leer = automatische Spracherkennung.
+
+Beispiel fuer ein lokales Whisper auf demselben Laptop (endpoint_type=openai):
+  "gateway_url": "http://127.0.0.1:8000",
+  "endpoint_type": "openai",
+  "model": "Systran/faster-whisper-small",
+  "language": "de"

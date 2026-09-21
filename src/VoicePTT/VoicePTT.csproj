@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>VoicePTT</AssemblyName>
+    <RootNamespace>VoicePTT</RootNamespace>
+    <ApplicationIcon>voiceptt.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>2.0.0</Version>
+    <FileVersion>2.0.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <Product>Voice Push-to-Talk</Product>
+    <Company>lokal</Company>
+    <AssemblyTitle>Voice Push-to-Talk</AssemblyTitle>
+    <Copyright>lokal</Copyright>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <DebugType>none</DebugType>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="voiceptt.ico" LogicalName="VoicePTT.voiceptt.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Vorlage fuer die erste Konfiguration; wird beim ersten Start nach %APPDATA% kopiert. -->
+    <None Update="config.default.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

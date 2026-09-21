@@ -1,0 +1,103 @@
+Voice Push-to-Talk 2.0 - Anleitung
+==================================
+
+Was ist das?
+------------
+Taste halten (Standard: F9), sprechen, loslassen. Die Aufnahme geht an den
+Whisper-Dienst, der erkannte Text wird in das gerade aktive Fenster eingefuegt.
+
+Voraussetzungen
+---------------
+* Windows 10 oder 11, 64 Bit
+* Ein Mikrofon
+* Ein erreichbarer Whisper-Dienst (voreingestellt: http://127.0.0.1:8055)
+
+Wichtig: Die Spracherkennung steckt NICHT in diesem Programm. Es nimmt nur auf
+und schickt die Aufnahme an einen Whisper-Dienst - entweder an ein eigenes
+Gateway, das zusaetzlich ein LLM zur Nachkorrektur einsetzt, oder an einen
+beliebigen OpenAI-kompatiblen Whisper-Server. Laeuft kein solcher Dienst, gibt
+es auch keinen Text. Die Adresse steht unter "Einstellungen" und laesst sich
+dort mit "Verbindung testen" pruefen.
+
+Python oder .NET muessen NICHT installiert sein - alles Noetige bringt der
+Installer mit; die Installation selbst kommt ohne Internet aus.
+
+Installation
+------------
+VoicePTT-Setup.exe starten und dem Assistenten folgen. Die Installation
+erfolgt fuer den angemeldeten Benutzer, es werden keine Adminrechte benoetigt.
+Im Assistenten waehlbar:
+  * Autostart mit Windows (empfohlen)
+  * Desktop-Verknuepfung
+  * Programm nach der Installation starten
+
+Eine vorhandene Python-Version (Voice Push-to-Talk 1.x) wird erkannt. Der
+Installer bietet an, sie zu entfernen; die alte config.json wird vorher
+uebernommen.
+
+Bedienung
+---------
+F9 halten, sprechen, loslassen. Ein kurzer Ton bestaetigt Start und Ende der
+Aufnahme, ein hoeherer Ton meldet den eingefuegten Text. Ein tiefer Ton
+bedeutet: nichts erkannt oder Fehler (Details siehe Protokoll).
+
+Tray-Symbol (Rechtsklick):
+  * Weboberflaeche oeffnen (Doppelklick auf das Symbol)
+  * Mikrofon auswaehlen
+  * Push-to-Talk-Taste aendern (F1-F12, Rollen, Pause, rechte Strg/Alt/Umschalt)
+  * Ton-Lautstaerke
+  * LLM-Korrektur ein/aus (nur beim Endpunkt-Typ "gateway")
+  * Taste an das aktive Fenster weitergeben (aus = die Taste wird abgefangen)
+  * Automatisch mit Windows starten
+  * Einstellungen, Konfigurationsdatei, Protokoll
+  * Beenden
+
+Einstellungen
+-------------
+Alles laesst sich im Dialog "Einstellungen..." aendern. Die Datei liegt unter
+  %APPDATA%\VoicePTT\config.json
+Das Protokoll liegt unter
+  %LOCALAPPDATA%\VoicePTT\client.log
+
+Felder in config.json:
+  gateway_url        Adresse des Whisper-Dienstes.
+  endpoint_type      "gateway" = eigener Dienst inkl. LLM-Korrektur (Standard)
+                     "openai"  = beliebiger Whisper-Server mit OpenAI-kompatibler
+                                 Schnittstelle (/v1/audio/transcriptions),
+                                 z. B. faster-whisper-server / Speaches.
+  model              nur bei endpoint_type=openai: erwarteter Modellname.
+  language           optional, z. B. "de"; leer = automatische Erkennung.
+  hotkey             Push-to-Talk-Taste, z. B. "f9".
+  input_device       null = Systemstandard, sonst Teil des Geraetenamens.
+  correct            LLM-Korrektur (nur endpoint_type=gateway).
+  insert_mode        "paste" (Strg+V) oder "type" (zeichenweise tippen).
+  restore_clipboard  Zwischenablage nach dem Einfuegen wiederherstellen.
+  samplerate         Aufnahmefrequenz, Standard 16000.
+  beep / beep_volume Signaltoene, Lautstaerke 0.0 bis 1.0.
+  suppress_hotkey    true = die Taste erreicht das aktive Fenster nicht mehr.
+  min_seconds        kuerzere Aufnahmen werden verworfen.
+
+Beispiel fuer ein lokales Whisper auf demselben Rechner:
+  "gateway_url": "http://127.0.0.1:8000",
+  "endpoint_type": "openai",
+  "model": "Systran/faster-whisper-small",
+  "language": "de"
+
+Deinstallation
+--------------
+Windows-Einstellungen -> Apps -> "Voice Push-to-Talk" -> Deinstallieren.
+Auf Wunsch werden dabei auch Konfiguration und Protokoll entfernt.
+
+Problemloesung
+--------------
+Kein Text wird eingefuegt
+  Protokoll oeffnen (Tray-Menue). Dort steht, ob die Aufnahme lief und was der
+  Dienst geantwortet hat.
+Taste reagiert nicht
+  Laeuft im Vordergrund ein Programm mit Adminrechten (z. B. Task-Manager),
+  erhaelt ein normales Programm keine Tastendruecke. Voice Push-to-Talk dann
+  ebenfalls als Administrator starten.
+Falsches Mikrofon
+  Tray-Menue -> Mikrofon. "Standard (automatisch)" nutzt das Windows-Standardgeraet.
+Dienst nicht erreichbar
+  Einstellungen -> "Verbindung testen".

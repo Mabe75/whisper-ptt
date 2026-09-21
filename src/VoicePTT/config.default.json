@@ -1,0 +1,16 @@
+{
+  "gateway_url": "http://127.0.0.1:8055",
+  "endpoint_type": "gateway",
+  "model": "whisper-1",
+  "language": "",
+  "hotkey": "f9",
+  "input_device": null,
+  "correct": true,
+  "insert_mode": "paste",
+  "restore_clipboard": true,
+  "samplerate": 16000,
+  "beep": true,
+  "beep_volume": 0.08,
+  "suppress_hotkey": true,
+  "min_seconds": 0.3
+}
