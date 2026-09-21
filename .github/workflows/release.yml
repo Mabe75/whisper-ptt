@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versionsnummer, z. B. 2.0.1 (nur fuer manuelle Laeufe)'
+        description: 'Version, z. B. 2.0.1 oder v2.0.1 - laedt an das Release v<Nummer>. Leer = nur Build-Artefakt.'
         required: false
         default: ''
 
@@ -23,10 +23,10 @@ jobs:
 
     steps:
       - name: Quellcode holen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: .NET SDK einrichten
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '8.0.x'
 
@@ -34,14 +34,15 @@ jobs:
         id: ver
         shell: pwsh
         run: |
-          $v = '${{ github.event.inputs.version }}'
-          if (-not $v) { $v = '${{ github.ref_name }}' -replace '^v', '' }
-          if ($v -notmatch '^\d+\.\d+\.\d+$') {
-            Write-Host "::warning::'$v' ist keine Versionsnummer x.y.z - nutze die Werte aus den Projektdateien."
-            $v = ''
+          $raw = '${{ github.event.inputs.version }}'
+          if (-not $raw -and '${{ github.ref_type }}' -eq 'tag') { $raw = '${{ github.ref_name }}' }
+          # Fuehrendes "v" ist ueberall erlaubt - im Tag wie im Eingabefeld.
+          $v = ($raw -replace '^[vV]', '').Trim()
+          if ($v -and $v -notmatch '^\d+\.\d+\.\d+$') {
+            throw "'$raw' ist keine Versionsnummer: erwartet wird x.y.z, wahlweise mit fuehrendem v."
           }
           "version=$v" >> $env:GITHUB_OUTPUT
-          Write-Host "Version: $(if ($v) { $v } else { 'aus Projektdateien' })"
+          Write-Host "Version: $v"
 
       - name: Inno Setup sicherstellen
         shell: pwsh
@@ -61,7 +62,7 @@ jobs:
           if ($v) { .\build.ps1 -Version $v } else { .\build.ps1 }
 
       - name: Installer als Artefakt sichern
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: VoicePTT-Setup
           path: dist/VoicePTT-Setup.exe
