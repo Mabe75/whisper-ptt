@@ -9,10 +9,17 @@
 
 .PARAMETER SkipPublish
     Nur den Installer neu packen, ohne vorher zu kompilieren.
+
+.PARAMETER Version
+    Versionsnummer x.y.z fuer Anwendung und Installer. Ohne Angabe gelten die
+    Werte aus VoicePTT.csproj und VoicePTT.iss. Der Release-Workflow reicht hier
+    die Nummer aus dem Git-Tag durch.
 #>
 [CmdletBinding()]
 param(
-    [switch]$SkipPublish
+    [switch]$SkipPublish,
+    [ValidatePattern('^$|^\d+\.\d+\.\d+$')]
+    [string]$Version = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,15 +43,22 @@ function Find-Iscc {
     throw "ISCC.exe nicht gefunden. Inno Setup 6 installieren: winget install -e --id JRSoftware.InnoSetup"
 }
 
+if ($Version) { Write-Host "== Version $Version ==" -ForegroundColor Cyan }
+
 if (-not $SkipPublish) {
     Write-Host '== dotnet publish (self-contained win-x64) ==' -ForegroundColor Cyan
     if (Test-Path $publishIn) { Remove-Item $publishIn -Recurse -Force }
+    # Bewusst so: eine if-Zuweisung wuerde das einelementige Array zu einem
+    # String entrollen, den PowerShell dann zeichenweise splattet.
+    $versionArg = @()
+    if ($Version) { $versionArg = @("-p:Version=$Version") }
     dotnet publish $project `
         -c Release `
         -r win-x64 `
         --self-contained true `
         -p:PublishSingleFile=false `
         -p:DebugType=none `
+        @versionArg `
         -o $publishIn
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish fehlgeschlagen (Exit $LASTEXITCODE)." }
 }
@@ -59,7 +73,10 @@ Write-Host "   Programmordner: $size MB" -ForegroundColor DarkGray
 Write-Host '== Inno Setup ==' -ForegroundColor Cyan
 $iscc = Find-Iscc
 New-Item -ItemType Directory -Force -Path $distDir | Out-Null
-& $iscc $issFile
+$isccArgs = @()
+if ($Version) { $isccArgs += "/DMyAppVersion=$Version" }
+$isccArgs += $issFile
+& $iscc @isccArgs
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup fehlgeschlagen (Exit $LASTEXITCODE)." }
 
 $setup = Join-Path $distDir 'VoicePTT-Setup.exe'

@@ -3,7 +3,10 @@
 ; die .NET-Laufzeit ist im Programmordner enthalten, es wird nichts nachgeladen.
 
 #define MyAppName "Voice Push-to-Talk"
-#define MyAppVersion "2.0.0"
+; Kann beim Aufruf ueberschrieben werden: ISCC /DMyAppVersion=2.0.1 VoicePTT.iss
+#ifndef MyAppVersion
+  #define MyAppVersion "2.0.0"
+#endif
 #define MyAppPublisher "lokal"
 #define MyAppExeName "VoicePTT.exe"
 
@@ -30,7 +33,7 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
-VersionInfoVersion=2.0.0.0
+VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup
 VersionInfoProductName={#MyAppName}
