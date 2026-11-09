@@ -1,4 +1,4 @@
-Voice Push-to-Talk 2.0 - Anleitung
+Voice Push-to-Talk 2.1 - Anleitung
 ==================================
 
 Was ist das?
@@ -69,7 +69,9 @@ Spezialwoerter (Registerkarte "Vokabular")
 Whisper hoert "Claude" gern als "Cloud" und "Qwen" als "kwen". Dagegen gibt es
 eine Tabelle mit drei Spalten:
 
-  Begriff         geht als Vorgabe an Whisper und als Hinweis an das LLM.
+  Begriff         geht als Hinweis an das LLM - und als Vorgabe an Whisper,
+                  aber nur bei endpoint_type=openai. Das eigene Gateway kennt
+                  dieses Feld nicht und bekommt es deshalb auch nicht.
   Varianten       werden im fertigen Text hart ersetzt, ohne Ruecksicht auf den
                   Zusammenhang. Nur eintragen, wenn die Falschschreibung nie
                   etwas anderes bedeuten kann ("kwen" ja, "cloud" nein).
@@ -92,9 +94,14 @@ Felder in config.json:
                                  z. B. faster-whisper-server / Speaches.
   model              nur bei endpoint_type=openai: erwarteter Modellname.
   language           optional, z. B. "de"; leer = automatische Erkennung.
-  hotkey             Push-to-Talk-Taste, z. B. "f9".
+  hotkey             Taste des alten Clients. Ab 2.1 stehen die Tasten in
+                     "profiles"; dieses Feld wird nur noch mitgeschrieben, damit
+                     eine parallel installierte 1.x/2.0-Fassung dieselbe Taste
+                     benutzt.
   input_device       null = Systemstandard, sonst Teil des Geraetenamens.
-  correct            LLM-Korrektur (nur endpoint_type=gateway).
+  correct            LLM-Korrektur im Gateway. Ab 2.1 entscheidet das
+                     Profil darueber ("correction"); das Feld bleibt fuer eine
+                     parallel installierte Altfassung erhalten.
   insert_mode        "paste" (Strg+V) oder "type" (zeichenweise tippen).
   restore_clipboard  Zwischenablage nach dem Einfuegen wiederherstellen.
   samplerate         Aufnahmefrequenz, Standard 16000.
@@ -103,7 +110,14 @@ Felder in config.json:
   min_seconds        kuerzere Aufnahmen werden verworfen.
   llm_url            OpenAI-kompatibler Chat-Endpunkt fuer die Nachbearbeitung,
                      z. B. http://192.168.178.34:8082/v1
-  llm_model          Modellname, den dieser Endpunkt erwartet.
+  llm_model          Modellname, den dieser Endpunkt erwartet. Erst wenn
+                     Adresse UND Modell gefuellt sind, arbeitet die
+                     Nachbearbeitung im Client; sonst korrigiert das Gateway.
+  llm_temperature    Vorgabe 0 - gleiche Eingabe, gleiche Ausgabe.
+  llm_timeout_seconds  Frist je Anfrage, Vorgabe 120.
+  send_vocabulary_to_whisper
+                     Begriffe als "prompt" an Whisper schicken
+                     (nur endpoint_type=openai).
   llm_extra          wird unveraendert in die Anfrage gemischt (serverspezifische
                      Schalter); ein Feld mit null entfernt einen Schluessel.
   profiles           Taste, Name, correction (llm/gateway/none), Anweisung,

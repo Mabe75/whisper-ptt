@@ -107,10 +107,14 @@ public static class LlmClient
         s = Regex.Replace(s, @"<think>.*?</think>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
         s = s.Trim();
 
-        if (s.Length > 1 &&
-            ((s[0] == '"' && s[^1] == '"') || (s[0] == '„' && s[^1] == '“')) &&
-            s.IndexOf('"', 1) == s.Length - 1)
-            s = s.Substring(1, s.Length - 2).Trim();
+        // Nur eine Verpackung des ganzen Textes entfernen, nie ein Zitat mitten im Satz.
+        if (s.Length > 1)
+        {
+            if (s[0] == '"' && s[^1] == '"' && s.IndexOf('"', 1) == s.Length - 1)
+                s = s.Substring(1, s.Length - 2).Trim();
+            else if (s[0] == '„' && s[^1] == '“' && s.IndexOf('„', 1) < 0)
+                s = s.Substring(1, s.Length - 2).Trim();
+        }
 
         return s;
     }

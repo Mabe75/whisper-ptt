@@ -68,7 +68,7 @@ Vokabeltabelle, deren Einträge an drei Stellen wirken:
 
 | Spalte | Wirkung |
 |---|---|
-| **Begriff** | geht als Vorgabe an Whisper und als Hinweis an das LLM |
+| **Begriff** | geht als Hinweis an das LLM; zusätzlich als `prompt` an Whisper, aber nur bei `endpoint_type: openai` |
 | **Varianten** | werden im fertigen Text hart ersetzt, ohne Rücksicht auf den Zusammenhang |
 | **Verwechslungen** | nennen dem LLM ein Wort als wahrscheinliche Fehlerkennung — entschieden wird am Satz |
 
@@ -92,9 +92,9 @@ Alles lässt sich im Einstellungsdialog ändern; die Datei liegt unter
 | `endpoint_type` | `gateway` (eigener Dienst inkl. LLM-Korrektur) oder `openai` |
 | `model` | nur bei `openai`: erwarteter Modellname |
 | `language` | z. B. `de`; leer = automatische Erkennung |
-| `hotkey` | Push-to-Talk-Taste, z. B. `f9` |
+| `hotkey` | Taste des alten Clients; ab 2.1 nur noch Spiegel des ersten Profils, damit eine parallel installierte Altfassung dieselbe Taste benutzt |
 | `input_device` | `null` = Systemstandard, sonst Teil des Gerätenamens |
-| `correct` | LLM-Korrektur (nur `endpoint_type=gateway`) |
+| `correct` | Korrektur im Gateway; ab 2.1 entscheidet das Profil über `correction`, das Feld bleibt für eine parallele Altfassung erhalten |
 | `insert_mode` | `paste` (Strg+V) oder `type` (zeichenweise tippen) |
 | `restore_clipboard` | Zwischenablage nach dem Einfügen wiederherstellen |
 | `samplerate` | Aufnahmefrequenz, Standard `16000` |
@@ -161,6 +161,9 @@ VoicePTT-Setup.bat       der frühere BAT-Installer, nur als Referenz
 | `HotkeyHook.cs` | globaler Low-Level-Tastatur-Hook, optional abfangend |
 | `Recorder.cs` | Mikrofonaufnahme (NAudio/WaveIn), WAV-Erzeugung |
 | `Transcriber.cs` | Upload an Gateway bzw. OpenAI-kompatiblen Server |
+| `Profile.cs` | Profile und Vokabeleinträge samt Vorgaben einer frischen Installation |
+| `LlmClient.cs` | Nachbearbeitung über einen OpenAI-kompatiblen Chat-Endpunkt |
+| `Vocabulary.cs` | Whisper-Vorgabe, Hinweisblock für das LLM, harte Ersetzungen |
 | `TextInserter.cs` | Einfügen per Strg+V oder zeichenweisem Tippen |
 | `SettingsForm.cs` | Einstellungsdialog |
 | `AppConfig.cs` | `config.json`, inkl. Übernahme alter Konfigurationen |

@@ -5,7 +5,7 @@
 #define MyAppName "Voice Push-to-Talk"
 ; Kann beim Aufruf ueberschrieben werden: ISCC /DMyAppVersion=2.0.1 VoicePTT.iss
 #ifndef MyAppVersion
-  #define MyAppVersion "2.1.0"
+  #define MyAppVersion "2.1.1"
 #endif
 #define MyAppPublisher "lokal"
 #define MyAppExeName "VoicePTT.exe"
@@ -151,7 +151,7 @@ begin
     Exit;
 
   ForceDirectories(NewDir);
-  if FileCopy(OldCfg, NewCfg, True) then
+  if CopyFile(OldCfg, NewCfg, True) then
     Log('Alte Konfiguration uebernommen: ' + OldCfg);
 end;
 

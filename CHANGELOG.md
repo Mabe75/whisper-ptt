@@ -3,6 +3,24 @@
 Das Format folgt lose [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern [SemVer](https://semver.org/lang/de/).
 
+## [2.1.1] – 2026-11-09
+
+### Behoben
+
+* Lieferte das Sprachmodell seine Antwort in deutschen Anführungszeichen, blieben diese
+  im eingefügten Text stehen – die Prüfung griff nur bei geraden Zeichen.
+* Eine frische Installation brachte eine vorbelegte LLM-Adresse mit, die auf den eigenen
+  Rechner zeigte. Das Feld bleibt jetzt leer, bis eine Adresse eingetragen wird.
+
+### Dokumentation
+
+* Anleitung auf 2.1 datiert und um `llm_temperature`, `llm_timeout_seconds` sowie
+  `send_vocabulary_to_whisper` ergänzt.
+* Klargestellt, dass Begriffe nur bei `endpoint_type: openai` an Whisper gehen; am eigenen
+  Gateway wirken sie über den LLM-Prompt und die Ersetzungen.
+* `hotkey` und `correct` sind als Altfelder gekennzeichnet, die nur noch für eine parallel
+  installierte Vorgängerfassung mitgeschrieben werden.
+
 ## [2.1.0] – 2026-11-09
 
 ### Neu
