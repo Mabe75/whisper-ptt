@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace VoicePTT;
 
-/// <summary>Tray-Symbol, Menue und der eigentliche Push-to-Talk-Ablauf.</summary>
+/// <summary>Tray-Symbol, Menü und der eigentliche Push-to-Talk-Ablauf.</summary>
 public sealed class TrayApp : ApplicationContext
 {
     private readonly AppConfig _cfg;
@@ -14,6 +14,7 @@ public sealed class TrayApp : ApplicationContext
     private readonly Recorder _rec = new();
     private EventWaitHandle _quitEvent;
     private RegisteredWaitHandle _quitWait;
+    private Profile _running;
     private bool _busy;
 
     public TrayApp(AppConfig cfg)
@@ -44,8 +45,8 @@ public sealed class TrayApp : ApplicationContext
         _icon.DoubleClick += (_, _) => OpenWebUi();
 
         _hook = new HotkeyHook(SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext());
-        _hook.SetKey(_cfg.Hotkey);
         _hook.Suppress = _cfg.SuppressHotkey;
+        _hook.SetProfiles(_cfg.Profiles);
         _hook.Pressed += OnPressed;
         _hook.Released += OnReleased;
         _hook.Install();
@@ -53,11 +54,11 @@ public sealed class TrayApp : ApplicationContext
         RegisterQuitSignal();
 
         UpdateTooltip();
-        Log.Write("Bereit. Taste=" + HotkeyNames.Display(_cfg.Hotkey), "Gateway=" + _cfg.GatewayUrl,
-                  "Modus=" + _cfg.EndpointType, "Einfuegen=" + _cfg.InsertMode);
+        Log.Write("Bereit. Gateway=" + _cfg.GatewayUrl, "Modus=" + _cfg.EndpointType,
+                  "LLM=" + (_cfg.LlmConfigured ? _cfg.LlmUrl + " (" + _cfg.LlmModel + ")" : "nicht konfiguriert"));
     }
 
-    /// <summary>Setup und Deinstallation koennen die laufende Instanz so sauber beenden.</summary>
+    /// <summary>Setup und Deinstallation können die laufende Instanz so sauber beenden.</summary>
     private void RegisterQuitSignal()
     {
         try
@@ -69,7 +70,7 @@ public sealed class TrayApp : ApplicationContext
                 catch (Exception ex) { Log.Write("Quit-Signal:", ex.Message); }
             }, null, Timeout.Infinite, true);
         }
-        catch (Exception ex) { Log.Write("Quit-Signal nicht verfuegbar:", ex.Message); }
+        catch (Exception ex) { Log.Write("Quit-Signal nicht verfügbar:", ex.Message); }
     }
 
     private static Icon LoadIcon()
@@ -85,27 +86,29 @@ public sealed class TrayApp : ApplicationContext
 
     // ---------------- Push-to-Talk ----------------
 
-    private void OnPressed()
+    private void OnPressed(Profile profile)
     {
         if (_rec.IsRecording) return;
         try
         {
             _rec.Start(_cfg);
-            Beep(660, 55);
-            UpdateTooltip(true);
+            _running = profile;
+            Beep(profile.BeepHz, 55);
+            UpdateTooltip();
         }
         catch (Exception ex)
         {
             Log.Write("Start fehlgeschlagen:", ex.Message);
             Beep(300, 200);
-            Warn("Aufnahme nicht moeglich: " + ex.Message);
+            Warn("Aufnahme nicht möglich: " + ex.Message);
         }
     }
 
-    private async void OnReleased()
+    private async void OnReleased(Profile profile)
     {
         if (!_rec.IsRecording) return;
         Beep(520, 55);
+        _running = null;
         UpdateTooltip();
 
         byte[] wav;
@@ -121,38 +124,68 @@ public sealed class TrayApp : ApplicationContext
         }
 
         var seconds = Wav.Seconds(wav, _cfg.SampleRate);
-        Log.Write("Aufnahme beendet:", seconds.ToString("0.00") + " s");
         if (seconds < _cfg.MinSeconds)
         {
-            Log.Write("Zu kurz, verworfen.");
+            Log.Write(profile.ToString(), "- zu kurz (" + seconds.ToString("0.00") + " s), verworfen.");
             Beep(300, 150);
             return;
         }
 
-        if (_busy)
-        {
-            Log.Write("Vorherige Anfrage laeuft noch - trotzdem gesendet.");
-        }
-
         _busy = true;
         UpdateTooltip();
+        var watch = Stopwatch.StartNew();
         try
         {
-            var text = await Transcriber.TranscribeAsync(wav, _cfg);
+            // Korrigiert der Client selbst, holt er beim Gateway bewusst den Rohtext.
+            // Ohne konfiguriertes LLM übernimmt das Gateway die Korrektur wie bisher.
+            var llm = profile.UsesLlm && _cfg.LlmConfigured;
+            var gatewayCorrection = profile.UsesGatewayCorrection || (profile.UsesLlm && !_cfg.LlmConfigured);
+
+            var text = await Transcriber.TranscribeAsync(wav, _cfg, gatewayCorrection);
+            var whisperMs = watch.ElapsedMilliseconds;
             if (string.IsNullOrWhiteSpace(text))
             {
-                Log.Write("Leeres Ergebnis.");
+                Log.Write(profile.ToString(), "- leeres Ergebnis nach", whisperMs + " ms");
                 Beep(300, 150);
                 return;
             }
-            Log.Write("Eingefuegt:", Quote(text));
+
+            long llmMs = 0;
+            if (llm)
+            {
+                var t0 = watch.ElapsedMilliseconds;
+                try
+                {
+                    text = await LlmClient.ProcessAsync(text, profile, _cfg);
+                }
+                catch (Exception ex)
+                {
+                    var msg = ex.GetBaseException().Message;
+                    Log.Write(profile.ToString(), "- Nachbearbeitung fehlgeschlagen:", msg);
+                    Warn("Nachbearbeitung fehlgeschlagen, Rohtext eingefügt: " + msg);
+                }
+                llmMs = watch.ElapsedMilliseconds - t0;
+            }
+
+            if (profile.Replacements) text = Vocabulary.ApplyReplacements(text, _cfg);
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Beep(300, 150);
+                return;
+            }
+
+            Log.Write(profile.ToString(), "- Audio " + seconds.ToString("0.0") + " s,",
+                      "Whisper " + whisperMs + " ms,",
+                      llm ? "LLM " + llmMs + " ms," : "ohne LLM,",
+                      "eingefügt:", Quote(text));
             TextInserter.Insert(text, _cfg);
             Beep(780, 55);
         }
         catch (Exception ex)
         {
             var msg = ex.GetBaseException().Message;
-            Log.Write("Fehler:", msg);
+            Log.Write(profile.ToString(), "- Fehler:", msg);
             Beep(300, 250);
             Warn("Transkription fehlgeschlagen: " + msg);
         }
@@ -172,43 +205,43 @@ public sealed class TrayApp : ApplicationContext
         try { _icon.ShowBalloonTip(5000, "Voice Push-to-Talk", msg, ToolTipIcon.Warning); } catch { }
     }
 
-    private void UpdateTooltip(bool recording = false)
+    private void UpdateTooltip()
     {
-        var state = recording ? "Aufnahme laeuft..." : _busy ? "Wird uebertragen..." : HotkeyNames.Display(_cfg.Hotkey) + " halten zum Sprechen";
+        string state;
+        if (_running != null) state = "Aufnahme: " + _running.Name;
+        else if (_busy) state = "Wird verarbeitet...";
+        else
+        {
+            var first = _cfg.Profiles.FirstOrDefault(p => p.Active);
+            state = first == null ? "keine Taste aktiv" : HotkeyNames.Display(first.Hotkey) + " halten zum Sprechen";
+        }
+
         var text = "Voice Push-to-Talk - " + state;
         _icon.Text = text.Length > 63 ? text.Substring(0, 60) + "..." : text;
     }
 
-    // ---------------- Menue ----------------
+    // ---------------- Menü ----------------
 
     private void BuildMenu()
     {
         _menu.Items.Clear();
 
-        var head = new ToolStripMenuItem(HotkeyNames.Display(_cfg.Hotkey) + " halten zum Sprechen") { Enabled = false };
-        _menu.Items.Add(head);
+        var any = false;
+        foreach (var p in _cfg.Profiles.Where(p => p.Active))
+        {
+            var hint = p.UsesLlm ? (_cfg.LlmConfigured ? p.Correction : "ohne LLM-Adresse: Gateway") : p.Correction;
+            _menu.Items.Add(new ToolStripMenuItem(p + "   (" + hint + ")") { Enabled = false });
+            any = true;
+        }
+        if (!any) _menu.Items.Add(new ToolStripMenuItem("Kein Profil aktiv") { Enabled = false });
         _menu.Items.Add(new ToolStripSeparator());
 
-        var web = new ToolStripMenuItem("Weboberflaeche oeffnen", null, (_, _) => OpenWebUi());
+        var web = new ToolStripMenuItem("Weboberfläche öffnen", null, (_, _) => OpenWebUi());
         web.Font = new Font(web.Font, FontStyle.Bold);
         _menu.Items.Add(web);
 
         _menu.Items.Add(MicMenu());
-        _menu.Items.Add(HotkeyMenu());
         _menu.Items.Add(VolumeMenu());
-
-        var correct = new ToolStripMenuItem("LLM-Korrektur", null, (_, _) =>
-        {
-            _cfg.Correct = !_cfg.Correct;
-            _cfg.Save();
-        })
-        {
-            Checked = _cfg.Correct,
-            CheckOnClick = false,
-            Enabled = !string.Equals(_cfg.EndpointType, "openai", StringComparison.OrdinalIgnoreCase),
-            ToolTipText = "Nur beim Endpunkt-Typ 'gateway' verfuegbar.",
-        };
-        _menu.Items.Add(correct);
 
         var passthrough = new ToolStripMenuItem("Taste an aktives Fenster weitergeben", null, (_, _) =>
         {
@@ -226,11 +259,11 @@ public sealed class TrayApp : ApplicationContext
 
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(new ToolStripMenuItem("Einstellungen...", null, (_, _) => ShowSettings()));
-        _menu.Items.Add(new ToolStripMenuItem("Konfigurationsdatei oeffnen", null,
+        _menu.Items.Add(new ToolStripMenuItem("Konfigurationsdatei öffnen", null,
             (_, _) => Paths.OpenInShell(Paths.ConfigPath)));
-        _menu.Items.Add(new ToolStripMenuItem("Protokoll oeffnen", null, (_, _) =>
+        _menu.Items.Add(new ToolStripMenuItem("Protokoll öffnen", null, (_, _) =>
         {
-            if (!File.Exists(Paths.LogPath)) Log.Write("Protokoll geoeffnet.");
+            if (!File.Exists(Paths.LogPath)) Log.Write("Protokoll geöffnet.");
             Paths.OpenInShell(Paths.LogPath);
         }));
         _menu.Items.Add(new ToolStripSeparator());
@@ -260,33 +293,12 @@ public sealed class TrayApp : ApplicationContext
     {
         _cfg.InputDevice = name;
         _cfg.Save();
-        Log.Write("Mikrofon gewaehlt:", name ?? "Standard");
-    }
-
-    private ToolStripMenuItem HotkeyMenu()
-    {
-        var root = new ToolStripMenuItem("Push-to-Talk-Taste");
-        foreach (var key in HotkeyNames.Selectable)
-        {
-            var k = key;
-            root.DropDownItems.Add(new ToolStripMenuItem(HotkeyNames.Display(k), null, (_, _) => SetHotkey(k))
-            { Checked = string.Equals(_cfg.Hotkey, k, StringComparison.OrdinalIgnoreCase) });
-        }
-        return root;
-    }
-
-    private void SetHotkey(string key)
-    {
-        _cfg.Hotkey = key;
-        _hook.SetKey(key);
-        _cfg.Save();
-        UpdateTooltip();
-        Log.Write("Taste gewaehlt:", key);
+        Log.Write("Mikrofon gewählt:", name ?? "Standard");
     }
 
     private ToolStripMenuItem VolumeMenu()
     {
-        var root = new ToolStripMenuItem("Ton-Lautstaerke");
+        var root = new ToolStripMenuItem("Ton-Lautstärke");
         (string Label, double Value)[] levels =
         {
             ("Aus", 0.0), ("Sehr leise", 0.03), ("Leise", 0.08),
@@ -312,7 +324,7 @@ public sealed class TrayApp : ApplicationContext
         var url = (_cfg.GatewayUrl ?? "").Trim();
         if (url.Length == 0) return;
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch (Exception ex) { Log.Write("Weboberflaeche oeffnen fehlgeschlagen:", ex.Message); }
+        catch (Exception ex) { Log.Write("Weboberfläche öffnen fehlgeschlagen:", ex.Message); }
     }
 
     private void ShowSettings()
@@ -320,15 +332,15 @@ public sealed class TrayApp : ApplicationContext
         using var f = new SettingsForm(_cfg);
         if (f.ShowDialog() != DialogResult.OK) return;
         _cfg.Sanitized().Save();
-        _hook.SetKey(_cfg.Hotkey);
         _hook.Suppress = _cfg.SuppressHotkey;
+        _hook.SetProfiles(_cfg.Profiles);
         UpdateTooltip();
         Log.Write("Einstellungen gespeichert.");
     }
 
     private void ExitApp()
     {
-        Log.Write("Beendet ueber Tray-Menue.");
+        Log.Write("Beendet über Tray-Menü.");
         ExitThread();
     }
 

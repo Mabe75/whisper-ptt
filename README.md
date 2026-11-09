@@ -47,11 +47,35 @@ eintragen und mit *Verbindung testen* prüfen — voreingestellt ist
 
 ## Bedienung
 
-**F9 halten, sprechen, loslassen.** Ein kurzer Ton bestätigt Beginn und Ende der
-Aufnahme, ein höherer meldet den eingefügten Text, ein tiefer einen Fehler.
+**Taste halten, sprechen, loslassen.** Welche Taste, entscheidet, was mit dem Diktat
+geschieht — jedes Profil hat seinen eigenen Startton, sodass man den Modus hört:
 
-Über das Tray-Symbol: Mikrofon, Push-to-Talk-Taste, Ton-Lautstärke,
-LLM-Korrektur, Autostart, Einstellungsdialog, Protokoll.
+| Taste | Profil | Verhalten |
+|---|---|---|
+| F9 | Diktat | Satzzeichen, Groß-/Kleinschreibung, Füllwörter raus; Wortlaut bleibt |
+| F8 | Formulieren | freie Umformulierung zu sauberer Prosa, Briefton |
+| F7 | Roh | unveränderte Transkription — für Passwörter, Code, exakte Zitate |
+| F6 | Assistent | das Gesprochene gilt als Auftrag, eingefügt wird das Ergebnis |
+
+Tasten, Namen, Anweisungen und Töne sind frei konfigurierbar; weitere Profile lassen
+sich anlegen. Über das Tray-Symbol: Mikrofon, Ton-Lautstärke, Autostart,
+Einstellungsdialog, Protokoll.
+
+## Spezialwörter
+
+Whisper hört „Claude" gern als „Cloud" und „Qwen" als „kwen". Dagegen gibt es eine
+Vokabeltabelle, deren Einträge an drei Stellen wirken:
+
+| Spalte | Wirkung |
+|---|---|
+| **Begriff** | geht als Vorgabe an Whisper und als Hinweis an das LLM |
+| **Varianten** | werden im fertigen Text hart ersetzt, ohne Rücksicht auf den Zusammenhang |
+| **Verwechslungen** | nennen dem LLM ein Wort als wahrscheinliche Fehlerkennung — entschieden wird am Satz |
+
+Die dritte Spalte löst den Fall, den eine Ersetzungsliste nicht lösen kann: „ich frag mal
+cloud" wird zu Claude, „die Daten in die cloud geschoben" bleibt die Cloud. Genannt werden
+dem Modell nur Verwechslungen, die im aktuellen Text wirklich vorkommen — jedes überflüssige
+Paar kostet messbar Trefferquote.
 
 Die ausführliche Anleitung liegt in [`installer/ANLEITUNG.txt`](installer/ANLEITUNG.txt)
 und wird mitinstalliert.
@@ -77,6 +101,21 @@ Alles lässt sich im Einstellungsdialog ändern; die Datei liegt unter
 | `beep`, `beep_volume` | Signaltöne, Lautstärke `0.0`–`1.0` |
 | `suppress_hotkey` | `true` = die Taste erreicht das aktive Fenster nicht mehr |
 | `min_seconds` | kürzere Aufnahmen werden verworfen |
+| `llm_url`, `llm_model` | OpenAI-kompatibler Chat-Endpunkt für die Nachbearbeitung |
+| `llm_temperature`, `llm_timeout_seconds` | Vorgabe `0` und `120` |
+| `llm_extra` | wird unverändert in den Request gemischt; ein Feld mit `null` entfernt einen vom Client gesetzten Schlüssel |
+| `profiles` | Taste, Name, `correction` (`llm`/`gateway`/`none`), Anweisung, `thinking`, `replacements`, `beep_hz` |
+| `vocabulary` | `term`, `variants`, `confusions`, `active` |
+| `send_vocabulary_to_whisper` | Begriffe als `prompt` an Whisper (nur `endpoint_type: openai`) |
+| `log_prompts` | schreibt den fertigen Systemprompt ins Protokoll |
+
+### Nachdenkende Modelle
+
+Qwen3 und Verwandte denken vor jeder Antwort sichtbar nach — eine Korrektur dauert damit
+statt 0,7 Sekunden rund 30. VoicePTT schaltet das pro Anfrage über
+`chat_template_kwargs.enable_thinking` ab; der Schalter *Denken* im Profil stellt es wieder
+an. Das dokumentierte `/no_think` im Prompt wirkt bei llama.cpp **nicht**. Für abweichende
+Server lässt sich der Anfragekörper über `llm_extra` ergänzen oder bereinigen.
 
 Beispiel für ein lokales Whisper auf demselben Rechner:
 

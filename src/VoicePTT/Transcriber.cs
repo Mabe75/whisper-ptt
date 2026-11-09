@@ -12,7 +12,10 @@ public static class Transcriber
         Timeout = TimeSpan.FromSeconds(120)
     };
 
-    public static async Task<string> TranscribeAsync(byte[] wav, AppConfig cfg, CancellationToken ct = default)
+    /// <param name="gatewayCorrection">Soll das Gateway selbst korrigieren? Übernimmt der Client
+    /// die Nachbearbeitung, wird hier false gesetzt und der Rohtext angefordert.</param>
+    public static async Task<string> TranscribeAsync(byte[] wav, AppConfig cfg, bool gatewayCorrection,
+                                                     CancellationToken ct = default)
     {
         var url = BuildUrl(cfg, out var isOpenAi);
 
@@ -33,10 +36,18 @@ public static class Transcriber
             form.Add(new StringContent("json"), "response_format");
             if (!string.IsNullOrWhiteSpace(cfg.Language))
                 form.Add(new StringContent(cfg.Language), "language");
+
+            // Begriffsvorgabe gibt es nur hier: das Gateway kennt das Feld nicht, und seine
+            // Schnittstelle bleibt unangetastet, damit die alte Installation weiterläuft.
+            if (cfg.SendVocabularyToWhisper)
+            {
+                var hint = Vocabulary.WhisperPrompt(cfg);
+                if (!string.IsNullOrWhiteSpace(hint)) form.Add(new StringContent(hint), "prompt");
+            }
         }
         else
         {
-            form.Add(new StringContent(cfg.Correct ? "true" : "false"), "correct");
+            form.Add(new StringContent(gatewayCorrection ? "true" : "false"), "correct");
         }
 
         using var resp = await Http.PostAsync(url, form, ct).ConfigureAwait(false);

@@ -37,20 +37,45 @@ uebernommen.
 
 Bedienung
 ---------
-F9 halten, sprechen, loslassen. Ein kurzer Ton bestaetigt Start und Ende der
-Aufnahme, ein hoeherer Ton meldet den eingefuegten Text. Ein tiefer Ton
-bedeutet: nichts erkannt oder Fehler (Details siehe Protokoll).
+Taste halten, sprechen, loslassen. Welche Taste du nimmst, entscheidet, was mit
+dem Diktat passiert. Jedes Profil hat einen eigenen Startton, du hoerst also,
+in welchem Modus du bist.
+
+  F9  Diktat        Satzzeichen, Gross-/Kleinschreibung, Fuellwoerter raus.
+                    Der Wortlaut bleibt.
+  F8  Formulieren   Der Text wird frei zu sauberer Prosa umformuliert.
+  F7  Roh           Unveraenderte Transkription, keine Nachbearbeitung.
+                    Fuer Passwoerter, Code und exakte Zitate.
+  F6  Assistent     Das Gesprochene gilt als Auftrag ("schreib eine hoefliche
+                    Absage an Herrn Mueller"), eingefuegt wird das Ergebnis.
+
+Ein hoeherer Ton meldet den eingefuegten Text, ein tiefer bedeutet: nichts
+erkannt oder Fehler (Details siehe Protokoll).
+
+Tasten, Namen, Anweisungen und Toene sind in den Einstellungen frei aenderbar,
+weitere Profile lassen sich anlegen.
 
 Tray-Symbol (Rechtsklick):
   * Weboberflaeche oeffnen (Doppelklick auf das Symbol)
   * Mikrofon auswaehlen
-  * Push-to-Talk-Taste aendern (F1-F12, Rollen, Pause, rechte Strg/Alt/Umschalt)
   * Ton-Lautstaerke
-  * LLM-Korrektur ein/aus (nur beim Endpunkt-Typ "gateway")
   * Taste an das aktive Fenster weitergeben (aus = die Taste wird abgefangen)
   * Automatisch mit Windows starten
   * Einstellungen, Konfigurationsdatei, Protokoll
   * Beenden
+
+Spezialwoerter (Registerkarte "Vokabular")
+------------------------------------------
+Whisper hoert "Claude" gern als "Cloud" und "Qwen" als "kwen". Dagegen gibt es
+eine Tabelle mit drei Spalten:
+
+  Begriff         geht als Vorgabe an Whisper und als Hinweis an das LLM.
+  Varianten       werden im fertigen Text hart ersetzt, ohne Ruecksicht auf den
+                  Zusammenhang. Nur eintragen, wenn die Falschschreibung nie
+                  etwas anderes bedeuten kann ("kwen" ja, "cloud" nein).
+  Verwechslungen  nennen dem LLM ein Wort als wahrscheinliche Fehlerkennung.
+                  Entschieden wird am Satz: "ich frag mal cloud" wird zu
+                  Claude, "die Daten in die cloud" bleibt die Cloud.
 
 Einstellungen
 -------------
@@ -76,6 +101,27 @@ Felder in config.json:
   beep / beep_volume Signaltoene, Lautstaerke 0.0 bis 1.0.
   suppress_hotkey    true = die Taste erreicht das aktive Fenster nicht mehr.
   min_seconds        kuerzere Aufnahmen werden verworfen.
+  llm_url            OpenAI-kompatibler Chat-Endpunkt fuer die Nachbearbeitung,
+                     z. B. http://192.168.178.34:8082/v1
+  llm_model          Modellname, den dieser Endpunkt erwartet.
+  llm_extra          wird unveraendert in die Anfrage gemischt (serverspezifische
+                     Schalter); ein Feld mit null entfernt einen Schluessel.
+  profiles           Taste, Name, correction (llm/gateway/none), Anweisung,
+                     thinking, replacements, beep_hz.
+  vocabulary         term, variants, confusions, active.
+  log_prompts        schreibt den fertigen Systemprompt ins Protokoll.
+
+Nachbearbeitung durch das Sprachmodell
+--------------------------------------
+Ohne eingetragene LLM-Adresse verhaelt sich das Programm wie frueher: Profile
+mit der Korrektur "llm" lassen dann das Gateway korrigieren. Antwortet das
+Sprachmodell nicht oder zu langsam, wird der unveraenderte Rohtext eingefuegt -
+ein Diktat geht nie verloren.
+
+Qwen3 und verwandte Modelle denken vor jeder Antwort sichtbar nach, was eine
+Korrektur von unter einer Sekunde auf rund 30 Sekunden streckt. VoicePTT
+schaltet das ab; der Schalter "Denken" im Profil stellt es bei Bedarf wieder an
+- bei freien Formulierungen lohnt sich das manchmal.
 
 Beispiel fuer ein lokales Whisper auf demselben Rechner:
   "gateway_url": "http://127.0.0.1:8000",

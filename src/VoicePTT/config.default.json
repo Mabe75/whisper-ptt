@@ -12,5 +12,13 @@
   "beep": true,
   "beep_volume": 0.08,
   "suppress_hotkey": true,
-  "min_seconds": 0.3
+  "min_seconds": 0.3,
+
+  "llm_url": "http://127.0.0.1:8082/v1",
+  "llm_model": "",
+  "llm_temperature": 0,
+  "llm_timeout_seconds": 120,
+  "llm_extra": {},
+  "send_vocabulary_to_whisper": true,
+  "log_prompts": false
 }
