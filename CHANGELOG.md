@@ -3,6 +3,29 @@
 Das Format folgt lose [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern [SemVer](https://semver.org/lang/de/).
 
+## [2.1.2] – 2026-11-11
+
+### Behoben
+
+* Nach einer Installation konnte der Deinstallationseintrag unter *Windows-Einstellungen →
+  Apps* fehlen; das Programm liess sich dann nur noch über `unins000.exe` im
+  Programmordner entfernen. Der Installer trägt den Eintrag jetzt am Ende der
+  Installation selbst nach, falls er nicht vorhanden ist – eine erneute Installation
+  stellt ihn damit in jedem Fall wieder her. Die Deinstallation räumt einen so
+  nachgetragenen Eintrag wieder ab, damit er nicht als Leiche stehen bleibt.
+* Das laufende Programm wird bei der Deinstallation jetzt beendet, bevor überhaupt etwas
+  entfernt wird, statt über einen Eintrag in der Deinstallationsliste. Vorher konnte ein
+  nicht reagierendes Programm die Deinstallation unbemerkt anhalten; ausserdem sammelte
+  sich der Eintrag bei jeder Neuinstallation ein weiteres Mal an.
+
+### Geändert
+
+* Jede Installation schreibt ein Protokoll (`Setup Log <Datum> #<Nr>.txt` im
+  Temporärordner). Fehlt hinterher etwas in der Registrierung, ist nachvollziehbar, was
+  der Installer getan hat.
+* Die AppId steht nur noch an einer Stelle im Installer-Skript und wird von dort auch für
+  den Namen des Deinstallationsschlüssels verwendet.
+
 ## [2.1.1] – 2026-11-09
 
 ### Behoben

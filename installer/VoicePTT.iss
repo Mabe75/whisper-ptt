@@ -5,13 +5,16 @@
 #define MyAppName "Voice Push-to-Talk"
 ; Kann beim Aufruf ueberschrieben werden: ISCC /DMyAppVersion=2.0.1 VoicePTT.iss
 #ifndef MyAppVersion
-  #define MyAppVersion "2.1.1"
+  #define MyAppVersion "2.1.2"
 #endif
 #define MyAppPublisher "lokal"
 #define MyAppExeName "VoicePTT.exe"
+; Einmal definiert: wird unten als AppId gesetzt und vom Code als Name des
+; Deinstallationsschluessels wiederverwendet (Inno haengt "_is1" an).
+#define MyAppId "{7C3F1E52-9D4B-4B57-9E1E-3B7A9D2C4F10}"
 
 [Setup]
-AppId={{7C3F1E52-9D4B-4B57-9E1E-3B7A9D2C4F10}
+AppId={{#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
@@ -38,6 +41,9 @@ VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup
 VersionInfoProductName={#MyAppName}
 CloseApplications=no
+; Jede Installation schreibt "Setup Log <Datum> #<Nr>.txt" nach %TEMP%. Kostet
+; nichts und ist die einzige Spur, falls hinterher ein Eintrag fehlt.
+SetupLogging=yes
 
 [Languages]
 Name: "de"; MessagesFile: "compiler:Languages\German.isl"
@@ -72,9 +78,6 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
-
-[UninstallRun]
-Filename: "{app}\{#MyAppExeName}"; Parameters: "--quit"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "QuitVoicePTT"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
@@ -208,6 +211,50 @@ begin
   Log('Python-Version entfernt: ' + OldDir);
 end;
 
+function UninstallKeyPath(): String;
+begin
+  Result := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#MyAppId}_is1';
+end;
+
+{ HKLM nur, wenn der Installer ausdruecklich mit /ALLUSERS gestartet wurde. }
+function UninstallRootKey(): Integer;
+begin
+  if IsAdminInstallMode() then
+    Result := HKEY_LOCAL_MACHINE
+  else
+    Result := HKEY_CURRENT_USER;
+end;
+
+{ Sicherheitsnetz: nachsehen, ob der Eintrag unter "Apps" wirklich steht, und
+  ihn notfalls selbst schreiben. Im Normalfall hat Inno das schon getan. Fehlt
+  er, laesst sich das Programm sonst nur noch ueber unins000.exe entfernen. }
+procedure EnsureUninstallRegistration();
+var
+  Root: Integer;
+  Key, Value, UninstExe: String;
+begin
+  Root := UninstallRootKey();
+  Key := UninstallKeyPath();
+
+  if RegQueryStringValue(Root, Key, 'UninstallString', Value) and (Value <> '') then
+  begin
+    Log('Deinstallationseintrag vorhanden: ' + Value);
+    Exit;
+  end;
+
+  UninstExe := ExpandConstant('{uninstallexe}');
+  Log('Deinstallationseintrag fehlte und wird nachgetragen: ' + Key);
+  RegWriteStringValue(Root, Key, 'DisplayName', '{#MyAppName}');
+  RegWriteStringValue(Root, Key, 'DisplayVersion', '{#MyAppVersion}');
+  RegWriteStringValue(Root, Key, 'Publisher', '{#MyAppPublisher}');
+  RegWriteStringValue(Root, Key, 'DisplayIcon', ExpandConstant('{app}\{#MyAppExeName}'));
+  RegWriteStringValue(Root, Key, 'InstallLocation', ExpandConstant('{app}\'));
+  RegWriteStringValue(Root, Key, 'UninstallString', '"' + UninstExe + '"');
+  RegWriteStringValue(Root, Key, 'QuietUninstallString', '"' + UninstExe + '" /SILENT');
+  RegWriteDWordValue(Root, Key, 'NoModify', 1);
+  RegWriteDWordValue(Root, Key, 'NoRepair', 1);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then
@@ -216,13 +263,26 @@ begin
   begin
     MigrateOldConfig();
     RemoveOldPythonInstall();
+    EnsureUninstallRegistration();
   end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
+  if CurUninstallStep = usUninstall then
+    StopRunningApp();
+
   if CurUninstallStep = usPostUninstall then
   begin
+    { Hat das Sicherheitsnetz oben den Eintrag nachgetragen, kennt ihn das
+      Deinstallationsprotokoll nicht. Er wuerde sonst stehen bleiben und auf
+      eine nicht mehr vorhandene unins000.exe zeigen. }
+    if RegKeyExists(UninstallRootKey(), UninstallKeyPath()) then
+    begin
+      Log('Nachgetragenen Deinstallationseintrag entfernen.');
+      RegDeleteKeyIncludingSubkeys(UninstallRootKey(), UninstallKeyPath());
+    end;
+
     if not UninstallSilent() then
       if MsgBox(ExpandConstant('{cm:RemoveUserData}'), mbConfirmation, MB_YESNO) = IDYES then
       begin
