@@ -78,12 +78,39 @@ jobs:
         run: |
           $tag = '${{ github.ref_name }}'
           if ('${{ github.ref_type }}' -ne 'tag') { $tag = 'v${{ steps.ver.outputs.version }}' }
+          $v = $tag -replace '^[vV]', ''
           Write-Host "Ziel-Release: $tag"
+
+          # Beschreibung aus dem passenden CHANGELOG-Abschnitt holen. Gesucht wird die
+          # Zeile "## [x.y.z]"; genommen wird alles bis zur naechsten solchen Zeile.
+          $notes = "Automatisch gebaut aus $tag."
+          if (Test-Path 'CHANGELOG.md') {
+            $lines = Get-Content 'CHANGELOG.md' -Encoding utf8
+            $muster = '^##\s+\[' + [regex]::Escape($v) + '\]'
+            $start = ($lines | Select-String -Pattern $muster | Select-Object -First 1).LineNumber
+            if ($start -and $start -lt $lines.Count) {
+              $rest = @($lines[$start..($lines.Count - 1)])
+              $weiter = ($rest | Select-String -Pattern '^##\s+\[' | Select-Object -First 1).LineNumber
+              if ($weiter -and $weiter -gt 1) { $rest = @($rest[0..($weiter - 2)]) }
+              $block = ($rest -join "`n").Trim()
+              if ($block) {
+                $notes = $block
+                Write-Host "Beschreibung aus CHANGELOG.md uebernommen ($($rest.Count) Zeilen)."
+              }
+            } else {
+              Write-Host "Kein CHANGELOG-Abschnitt fuer $v gefunden - generische Beschreibung."
+            }
+          }
+          $notesFile = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          Set-Content -Path $notesFile -Value $notes -Encoding utf8
+
           gh release view $tag > $null 2>&1
           if ($LASTEXITCODE -ne 0) {
             Write-Host "Release $tag existiert noch nicht - wird angelegt."
-            gh release create $tag --title "Voice Push-to-Talk $($tag -replace '^v', '')" --notes "Automatisch gebaut aus $tag."
+            gh release create $tag --title "Voice Push-to-Talk $v" --notes-file $notesFile
             if ($LASTEXITCODE -ne 0) { throw "Release konnte nicht angelegt werden." }
+          } else {
+            Write-Host "Release $tag existiert bereits - die Beschreibung bleibt unveraendert."
           }
           gh release upload $tag dist\VoicePTT-Setup.exe --clobber
           if ($LASTEXITCODE -ne 0) { throw "Upload fehlgeschlagen." }
