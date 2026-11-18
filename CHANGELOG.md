@@ -7,7 +7,7 @@ die Versionsnummern [SemVer](https://semver.org/lang/de/).
 
 ### Neu
 
-* **Einfügekurzel frei wählbar** (`paste_keys`). Konsolen verstehen Strg+V oft nicht als
+* **Einfügekürzel frei wählbar** (`paste_keys`). Konsolen verstehen Strg+V oft nicht als
   Einfügen, sondern nur Umschalt+Einfg – in Claude Code und ähnlichen Eingabemasken kam
   der Text deshalb nicht an. Erlaubt sind Kombinationen aus Strg, Umschalt, Alt und Win mit
   einer Taste, z. B. `shift+insert` oder `ctrl+shift+v`. Deutsche Schreibweisen wie
