@@ -56,6 +56,14 @@ public sealed class TrayApp : ApplicationContext
         UpdateTooltip();
         Log.Write("Bereit. Gateway=" + _cfg.GatewayUrl, "Modus=" + _cfg.EndpointType,
                   "LLM=" + (_cfg.LlmConfigured ? _cfg.LlmUrl + " (" + _cfg.LlmModel + ")" : "nicht konfiguriert"));
+
+        // Nur die Profile nennen, die vom allgemeinen Einfuegeweg abweichen - sonst
+        // steht bei jedem Start dieselbe Zeile vierfach im Protokoll.
+        foreach (var p in _cfg.Profiles.Where(p => p.Active &&
+                     (!string.IsNullOrWhiteSpace(p.InsertMode) ||
+                      !string.IsNullOrWhiteSpace(p.PasteKeys) ||
+                      !string.IsNullOrWhiteSpace(p.Newline))))
+            Log.Write(p.ToString(), "-", TextInserter.Describe(_cfg, p));
     }
 
     /// <summary>Setup und Deinstallation können die laufende Instanz so sauber beenden.</summary>
@@ -179,7 +187,7 @@ public sealed class TrayApp : ApplicationContext
                       "Whisper " + whisperMs + " ms,",
                       llm ? "LLM " + llmMs + " ms," : "ohne LLM,",
                       "eingefügt:", Quote(text));
-            TextInserter.Insert(text, _cfg);
+            TextInserter.Insert(text, _cfg, profile);
             Beep(780, 55);
         }
         catch (Exception ex)

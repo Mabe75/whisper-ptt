@@ -36,6 +36,8 @@ public sealed class SettingsForm : Form
     // Allgemein
     private readonly ComboBox _mic = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
     private readonly ComboBox _insert = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
+    private readonly ComboBox _pasteKeys = new() { DropDownStyle = ComboBoxStyle.DropDown, Width = 300 };
+    private readonly ComboBox _newline = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
     private readonly ComboBox _rate = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
     private readonly TrackBar _volume = new() { Minimum = 0, Maximum = 100, TickFrequency = 10, Width = 240 };
     private readonly Label _volumeLabel = new() { AutoSize = true, Text = "8 %" };
@@ -53,8 +55,8 @@ public sealed class SettingsForm : Form
         AutoScaleMode = AutoScaleMode.Dpi;
         MinimizeBox = false;
         MaximizeBox = false;
-        Size = new Size(840, 660);
-        MinimumSize = new Size(760, 560);
+        Size = new Size(1000, 680);
+        MinimumSize = new Size(880, 560);
         try
         {
             using var s = typeof(SettingsForm).Assembly.GetManifestResourceStream("VoicePTT.voiceptt.ico");
@@ -207,13 +209,52 @@ public sealed class SettingsForm : Form
             FillWeight = 90,
         };
 
+        var ins = new DataGridViewComboBoxColumn
+        {
+            HeaderText = "Einfügen",
+            Name = "ins",
+            DataSource = new List<Choice>
+            {
+                new() { Key = "", Label = "wie allgemein" },
+                new() { Key = "paste", Label = "einfügen" },
+                new() { Key = "type", Label = "tippen" },
+            },
+            DisplayMember = nameof(Choice.Label),
+            ValueMember = nameof(Choice.Key),
+            FillWeight = 85,
+        };
+        var nl = new DataGridViewComboBoxColumn
+        {
+            HeaderText = "Umbruch",
+            Name = "nl",
+            DataSource = new List<Choice>
+            {
+                new() { Key = "", Label = "wie allgemein" },
+                new() { Key = "enter", Label = "Enter" },
+                new() { Key = "space", Label = "Leerzeichen" },
+                new() { Key = "shift+enter", Label = "Umschalt+Enter" },
+            },
+            DisplayMember = nameof(Choice.Label),
+            ValueMember = nameof(Choice.Key),
+            FillWeight = 95,
+        };
+
         _grid.Columns.Add(keys);
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Name", Name = "name", FillWeight = 110 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Name", Name = "name", FillWeight = 95 });
         _grid.Columns.Add(corr);
-        _grid.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = "Denken", Name = "think", FillWeight = 60 });
+        _grid.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = "Denken", Name = "think", FillWeight = 55 });
         _grid.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = "Ersetzen", Name = "repl", FillWeight = 60 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Ton (Hz)", Name = "hz", FillWeight = 60 });
-        _grid.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = "Aktiv", Name = "on", FillWeight = 50 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Ton (Hz)", Name = "hz", FillWeight = 55 });
+        _grid.Columns.Add(ins);
+        _grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            HeaderText = "Kürzel",
+            Name = "pkeys",
+            FillWeight = 85,
+            ToolTipText = "Einfügekürzel nur für dieses Profil, z. B. shift+insert. Leer = wie allgemein.",
+        });
+        _grid.Columns.Add(nl);
+        _grid.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = "Aktiv", Name = "on", FillWeight = 45 });
 
         _grid.SelectionChanged += (_, _) => SwitchInstruction();
 
@@ -253,8 +294,9 @@ public sealed class SettingsForm : Form
             AutoSize = false,
             Height = 34,
             ForeColor = SystemColors.GrayText,
-            Text = "Neue Zeile in der Tabelle = neues Profil. \"Denken\" macht Qwen-Modelle deutlich langsamer, " +
-                   "liefert bei freien Formulierungen aber oft bessere Ergebnisse.",
+            Text = "Neue Zeile in der Tabelle = neues Profil. \"Denken\" macht Qwen-Modelle deutlich langsamer, "
+                 + "liefert bei freien Formulierungen aber oft bessere Ergebnisse. \"Einfügen\", \"Kürzel\" und "
+                 + "\"Umbruch\" leer lassen heißt: wie unter \"Allgemein\" eingestellt.",
         };
 
         page.Controls.Add(_grid);
@@ -318,8 +360,22 @@ public sealed class SettingsForm : Form
 
         AddRow(grid, "Mikrofon", _mic);
         AddRow(grid, "Text einfügen per", _insert);
+        AddRow(grid, "Einfügekürzel", _pasteKeys);
+        AddRow(grid, "Zeilenumbruch wird", _newline);
         AddRow(grid, "Abtastrate", _rate);
         AddRow(grid, "Signalton-Lautstärke", volRow);
+
+        var hint = new Label
+        {
+            AutoSize = false,
+            Width = 560,
+            Height = 46,
+            ForeColor = SystemColors.GrayText,
+            Text = "Konsolen verstehen Strg+V oft nicht als Einfügen, sondern Umschalt+Einfg. "
+                 + "Eingabemasken schicken bei einem Umbruch ab – dort hilft \"Leerzeichen\" oder "
+                 + "\"Umschalt+Enter\". Beides lässt sich pro Profil abweichend einstellen.",
+        };
+        AddRow(grid, "", hint);
 
         var checks = new FlowLayoutPanel
         {
@@ -396,8 +452,26 @@ public sealed class SettingsForm : Form
             _mic.SelectedIndex = i;
         }
 
-        _insert.Items.AddRange(new object[] { "Einfügen (Strg+V)", "Zeichenweise tippen" });
+        _insert.Items.AddRange(new object[] { "Über die Zwischenablage einfügen", "Zeichenweise tippen" });
         _insert.SelectedIndex = string.Equals(_cfg.InsertMode, "type", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+
+        _pasteKeys.Items.AddRange(KeyChord.Selectable.Cast<object>().ToArray());
+        _pasteKeys.Text = string.IsNullOrWhiteSpace(_cfg.PasteKeys) ? "ctrl+v" : _cfg.PasteKeys;
+
+        _newline.Items.AddRange(new object[]
+        {
+            new Choice { Key = "enter", Label = "Enter senden" },
+            new Choice { Key = "space", Label = "Leerzeichen statt Umbruch" },
+            new Choice { Key = "shift+enter", Label = "Umschalt+Enter" },
+        });
+        _newline.DisplayMember = nameof(Choice.Label);
+        _newline.ValueMember = nameof(Choice.Key);
+        _newline.SelectedIndex = NewlineModes.Parse(_cfg.Newline) switch
+        {
+            NewlineMode.Space => 1,
+            NewlineMode.ShiftEnter => 2,
+            _ => 0,
+        };
 
         _rate.Items.AddRange(new object[] { "16000 Hz (empfohlen)", "22050 Hz", "44100 Hz", "48000 Hz" });
         _rate.SelectedIndex = _cfg.SampleRate switch { 22050 => 1, 44100 => 2, 48000 => 3, _ => 0 };
@@ -417,7 +491,8 @@ public sealed class SettingsForm : Form
         _instruction.Text = "";
         _grid.Rows.Clear();
         foreach (var p in _profiles)
-            _grid.Rows.Add(p.Hotkey, p.Name, p.Correction, p.Thinking, p.Replacements, p.BeepHz, p.Active);
+            _grid.Rows.Add(p.Hotkey, p.Name, p.Correction, p.Thinking, p.Replacements, p.BeepHz,
+                           p.InsertMode ?? "", p.PasteKeys ?? "", p.Newline ?? "", p.Active);
         if (_grid.Rows.Count > 0) _grid.CurrentCell = _grid.Rows[0].Cells[1];
         SwitchInstruction();
     }
@@ -479,6 +554,23 @@ public sealed class SettingsForm : Form
             return;
         }
 
+        var pasteKeys = _pasteKeys.Text.Trim();
+        if (pasteKeys.Length == 0) pasteKeys = "ctrl+v";
+        if (KeyChord.Parse(pasteKeys, out var chordProblem) == null)
+        {
+            Warn("Einfügekürzel nicht verstanden: " + chordProblem +
+                 ".\nBeispiele: ctrl+v, shift+insert, ctrl+shift+v", _pasteKeys);
+            return;
+        }
+
+        var badKeys = profiles.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.PasteKeys) && !KeyChord.IsValid(p.PasteKeys));
+        if (badKeys != null)
+        {
+            Warn("Profil \"" + badKeys.Name + "\": das Kürzel \"" + badKeys.PasteKeys + "\" ist nicht zu gebrauchen.\n" +
+                 "Beispiele: ctrl+v, shift+insert, ctrl+shift+v. Leer lassen übernimmt die allgemeine Einstellung.", _grid);
+            return;
+        }
+
         _cfg.GatewayUrl = url.TrimEnd('/');
         _cfg.EndpointType = _endpoint.SelectedIndex == 1 ? "openai" : "gateway";
         _cfg.Model = _model.Text.Trim();
@@ -495,6 +587,8 @@ public sealed class SettingsForm : Form
 
         _cfg.InputDevice = _mic.SelectedIndex <= 0 ? null : (string)_mic.SelectedItem;
         _cfg.InsertMode = _insert.SelectedIndex == 1 ? "type" : "paste";
+        _cfg.PasteKeys = pasteKeys;
+        _cfg.Newline = (_newline.SelectedItem as Choice)?.Key ?? "enter";
         _cfg.SampleRate = _rate.SelectedIndex switch { 1 => 22050, 2 => 44100, 3 => 48000, _ => 16000 };
         _cfg.BeepVolume = _volume.Value / 100.0;
         _cfg.Beep = _volume.Value > 0;
@@ -523,6 +617,9 @@ public sealed class SettingsForm : Form
             p.Thinking = Flag(row, "think");
             p.Replacements = Flag(row, "repl");
             p.BeepHz = int.TryParse(CellText(row, "hz"), out var hz) ? hz : 660;
+            p.InsertMode = CellText(row, "ins").Trim();
+            p.PasteKeys = CellText(row, "pkeys").Trim();
+            p.Newline = CellText(row, "nl").Trim();
             p.Active = Flag(row, "on");
             list.Add(p);
         }

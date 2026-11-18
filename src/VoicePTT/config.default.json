@@ -7,6 +7,8 @@
   "input_device": null,
   "correct": true,
   "insert_mode": "paste",
+  "paste_keys": "ctrl+v",
+  "newline": "enter",
   "restore_clipboard": true,
   "samplerate": 16000,
   "beep": true,

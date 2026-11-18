@@ -24,6 +24,13 @@ public class AppConfig
 
     [JsonPropertyName("correct")] public bool Correct { get; set; } = true;
     [JsonPropertyName("insert_mode")] public string InsertMode { get; set; } = "paste";
+
+    /// <summary>Tastenkuerzel, mit dem im Modus "paste" eingefuegt wird. Konsolen verstehen
+    /// oft nur "shift+insert". Profile duerfen das ueberschreiben.</summary>
+    [JsonPropertyName("paste_keys")] public string PasteKeys { get; set; } = "ctrl+v";
+
+    /// <summary>Was aus einem Zeilenumbruch wird: "enter", "space" oder "shift+enter".</summary>
+    [JsonPropertyName("newline")] public string Newline { get; set; } = "enter";
     [JsonPropertyName("restore_clipboard")] public bool RestoreClipboard { get; set; } = true;
     [JsonPropertyName("samplerate")] public int SampleRate { get; set; } = 16000;
     [JsonPropertyName("beep")] public bool Beep { get; set; } = true;
@@ -120,6 +127,18 @@ public class AppConfig
         if (string.IsNullOrWhiteSpace(Hotkey)) Hotkey = "f9";
         if (string.IsNullOrWhiteSpace(GatewayUrl)) GatewayUrl = "http://127.0.0.1:8055";
         InsertMode = string.Equals(InsertMode, "type", StringComparison.OrdinalIgnoreCase) ? "type" : "paste";
+
+        if (!KeyChord.IsValid(PasteKeys))
+        {
+            Log.Write("paste_keys \"" + (PasteKeys ?? "") + "\" unbrauchbar, nutze ctrl+v.");
+            PasteKeys = "ctrl+v";
+        }
+        if (!NewlineModes.TryParse(Newline, out _))
+        {
+            if (!string.IsNullOrWhiteSpace(Newline))
+                Log.Write("newline \"" + Newline + "\" unbekannt, nutze enter.");
+            Newline = "enter";
+        }
         EndpointType = string.Equals(EndpointType, "openai", StringComparison.OrdinalIgnoreCase) ? "openai" : "gateway";
         LlmExtra ??= new JsonObject();
         Vocabulary ??= VocabularyEntry.Defaults();
@@ -133,6 +152,21 @@ public class AppConfig
             var c = (p.Correction ?? "").ToLowerInvariant();
             p.Correction = c is "llm" or "gateway" or "none" ? c : "llm";
             if (p.BeepHz < 100 || p.BeepHz > 4000) p.BeepHz = 660;
+
+            // Leer heisst immer "wie global eingestellt" - Unsinn wird geleert, nicht geraten.
+            var im = (p.InsertMode ?? "").Trim().ToLowerInvariant();
+            p.InsertMode = im is "paste" or "type" ? im : "";
+
+            if (!string.IsNullOrWhiteSpace(p.PasteKeys) && !KeyChord.IsValid(p.PasteKeys))
+            {
+                Log.Write("Profil", p.Name, "- Einfuegekuerzel \"" + p.PasteKeys + "\" unbrauchbar, nutzt die allgemeine Einstellung.");
+                p.PasteKeys = "";
+            }
+            if (!string.IsNullOrWhiteSpace(p.Newline) && !NewlineModes.TryParse(p.Newline, out _))
+            {
+                Log.Write("Profil", p.Name, "- newline \"" + p.Newline + "\" unbekannt, nutzt die allgemeine Einstellung.");
+                p.Newline = "";
+            }
         }
         DeactivateDuplicateHotkeys();
 

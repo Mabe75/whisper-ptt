@@ -16,6 +16,8 @@ internal static class Native
 
     public const ushort VK_CONTROL = 0x11;
     public const ushort VK_V = 0x56;
+    public const ushort VK_SHIFT_KEY = 0x10;
+    public const ushort VK_RETURN = 0x0D;
 
     public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 
@@ -114,14 +116,22 @@ internal static class Native
         }
     };
 
-    public static void SendCtrlV()
+    /// <summary>Sendet ein Tastenkuerzel, z. B. Strg+V oder Umschalt+Einfg.
+    /// Zusatztasten werden in umgekehrter Reihenfolge wieder losgelassen.</summary>
+    public static void SendChord(KeyChord chord)
     {
         WaitForModifiersReleased();
-        var seq = new[] { Key(VK_CONTROL, false), Key(VK_V, false), Key(VK_V, true), Key(VK_CONTROL, true) };
-        SendInput((uint)seq.Length, seq, InputSize);
+        var seq = new List<INPUT>(chord.Modifiers.Length * 2 + 2);
+        foreach (var m in chord.Modifiers) seq.Add(Key(m, false));
+        seq.Add(Key(chord.Key, false));
+        seq.Add(Key(chord.Key, true));
+        for (var i = chord.Modifiers.Length - 1; i >= 0; i--) seq.Add(Key(chord.Modifiers[i], true));
+
+        var arr = seq.ToArray();
+        SendInput((uint)arr.Length, arr, InputSize);
     }
 
-    public static void SendText(string text)
+    public static void SendText(string text, NewlineMode newline = NewlineMode.Enter)
     {
         WaitForModifiersReleased();
         const int chunk = 200;
@@ -131,8 +141,26 @@ internal static class Native
             if (c == '\r') continue;
             if (c == '\n')
             {
-                list.Add(Key(0x0D, false));
-                list.Add(Key(0x0D, true));
+                switch (newline)
+                {
+                    case NewlineMode.Space:
+                        list.Add(Unicode(' ', false));
+                        list.Add(Unicode(' ', true));
+                        break;
+
+                    // In Eingabemasken ein Umbruch, der die Eingabe nicht abschickt.
+                    case NewlineMode.ShiftEnter:
+                        list.Add(Key(VK_SHIFT_KEY, false));
+                        list.Add(Key(VK_RETURN, false));
+                        list.Add(Key(VK_RETURN, true));
+                        list.Add(Key(VK_SHIFT_KEY, true));
+                        break;
+
+                    default:
+                        list.Add(Key(VK_RETURN, false));
+                        list.Add(Key(VK_RETURN, true));
+                        break;
+                }
             }
             else
             {

@@ -55,6 +55,20 @@ erkannt oder Fehler (Details siehe Protokoll).
 Tasten, Namen, Anweisungen und Toene sind in den Einstellungen frei aenderbar,
 weitere Profile lassen sich anlegen.
 
+Konsolen und Eingabemasken
+--------------------------
+Nicht jedes Programm nimmt Text gleich an. Konsolen verstehen Strg+V haeufig
+nicht als Einfuegen, sondern nur Umschalt+Einfg. Und Eingabemasken - etwa die
+von Claude Code - schicken den Text beim ersten Zeilenumbruch ab.
+
+Unter "Allgemein" stehen dafuer "Einfuegekuerzel" und "Zeilenumbruch wird".
+Beides laesst sich in der Profiltabelle pro Taste abweichend setzen (Spalten
+"Einfuegen", "Kuerzel", "Umbruch"); leer bedeutet "wie allgemein".
+
+Bewaehrt fuer ein Terminal: eine eigene Taste mit Einfuegen = tippen und
+Umbruch = Leerzeichen. Der Text kommt dann als eine Eingabe an und wird nicht
+vorzeitig abgeschickt.
+
 Tray-Symbol (Rechtsklick):
   * Weboberflaeche oeffnen (Doppelklick auf das Symbol)
   * Mikrofon auswaehlen
@@ -102,7 +116,16 @@ Felder in config.json:
   correct            LLM-Korrektur im Gateway. Ab 2.1 entscheidet das
                      Profil darueber ("correction"); das Feld bleibt fuer eine
                      parallel installierte Altfassung erhalten.
-  insert_mode        "paste" (Strg+V) oder "type" (zeichenweise tippen).
+  insert_mode        "paste" (ueber die Zwischenablage) oder "type"
+                     (zeichenweise tippen).
+  paste_keys         Welches Kuerzel das Einfuegen ausloest, Vorgabe "ctrl+v".
+                     Konsolen verstehen Strg+V oft nicht als Einfuegen und
+                     brauchen "shift+insert". Erlaubt sind Strg, Umschalt, Alt
+                     und Win mit einer Taste, z. B. "ctrl+shift+v".
+  newline            Was aus einem Zeilenumbruch wird: "enter" (Vorgabe),
+                     "space" (Umbrueche werden zu Leerzeichen) oder
+                     "shift+enter" (Umbruch ohne Abschicken). In Eingabemasken
+                     wuerde ein Enter das Diktat mitten im Satz abschicken.
   restore_clipboard  Zwischenablage nach dem Einfuegen wiederherstellen.
   samplerate         Aufnahmefrequenz, Standard 16000.
   beep / beep_volume Signaltoene, Lautstaerke 0.0 bis 1.0.
@@ -121,7 +144,8 @@ Felder in config.json:
   llm_extra          wird unveraendert in die Anfrage gemischt (serverspezifische
                      Schalter); ein Feld mit null entfernt einen Schluessel.
   profiles           Taste, Name, correction (llm/gateway/none), Anweisung,
-                     thinking, replacements, beep_hz.
+                     thinking, replacements, beep_hz. Dazu insert_mode,
+                     paste_keys und newline - leer heisst "wie allgemein".
   vocabulary         term, variants, confusions, active.
   log_prompts        schreibt den fertigen Systemprompt ins Protokoll.
 

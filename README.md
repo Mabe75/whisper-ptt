@@ -61,6 +61,22 @@ Tasten, Namen, Anweisungen und Töne sind frei konfigurierbar; weitere Profile l
 sich anlegen. Über das Tray-Symbol: Mikrofon, Ton-Lautstärke, Autostart,
 Einstellungsdialog, Protokoll.
 
+### Konsolen und Eingabemasken
+
+Nicht jedes Programm nimmt Text auf demselben Weg an. Konsolen verstehen Strg+V häufig
+nicht als Einfügen, sondern nur **Umschalt+Einfg**, und Eingabemasken wie die von Claude
+Code schicken den Text beim ersten **Zeilenumbruch** ab. Dafür gibt es drei Schalter, die
+sich auch pro Profil setzen lassen:
+
+| Einstellung | Wirkung |
+|---|---|
+| `insert_mode` | `paste` über die Zwischenablage oder `type` zeichenweise getippt |
+| `paste_keys` | welches Kürzel das Einfügen auslöst, z. B. `shift+insert` |
+| `newline` | `enter`, `space` (keine Umbrüche im Text) oder `shift+enter` |
+
+So kann eine Taste fürs Terminal getippten Text ohne Umbrüche liefern, während die
+übrigen Tasten unverändert einfügen.
+
 ## Spezialwörter
 
 Whisper hört „Claude" gern als „Cloud" und „Qwen" als „kwen". Dagegen gibt es eine
@@ -95,7 +111,9 @@ Alles lässt sich im Einstellungsdialog ändern; die Datei liegt unter
 | `hotkey` | Taste des alten Clients; ab 2.1 nur noch Spiegel des ersten Profils, damit eine parallel installierte Altfassung dieselbe Taste benutzt |
 | `input_device` | `null` = Systemstandard, sonst Teil des Gerätenamens |
 | `correct` | Korrektur im Gateway; ab 2.1 entscheidet das Profil über `correction`, das Feld bleibt für eine parallele Altfassung erhalten |
-| `insert_mode` | `paste` (Strg+V) oder `type` (zeichenweise tippen) |
+| `insert_mode` | `paste` (über die Zwischenablage) oder `type` (zeichenweise tippen) |
+| `paste_keys` | Einfügekürzel für `paste`, Vorgabe `ctrl+v`; Konsolen brauchen oft `shift+insert` |
+| `newline` | was aus einem Zeilenumbruch wird: `enter`, `space` oder `shift+enter` |
 | `restore_clipboard` | Zwischenablage nach dem Einfügen wiederherstellen |
 | `samplerate` | Aufnahmefrequenz, Standard `16000` |
 | `beep`, `beep_volume` | Signaltöne, Lautstärke `0.0`–`1.0` |
@@ -104,7 +122,7 @@ Alles lässt sich im Einstellungsdialog ändern; die Datei liegt unter
 | `llm_url`, `llm_model` | OpenAI-kompatibler Chat-Endpunkt für die Nachbearbeitung |
 | `llm_temperature`, `llm_timeout_seconds` | Vorgabe `0` und `120` |
 | `llm_extra` | wird unverändert in den Request gemischt; ein Feld mit `null` entfernt einen vom Client gesetzten Schlüssel |
-| `profiles` | Taste, Name, `correction` (`llm`/`gateway`/`none`), Anweisung, `thinking`, `replacements`, `beep_hz` |
+| `profiles` | Taste, Name, `correction` (`llm`/`gateway`/`none`), Anweisung, `thinking`, `replacements`, `beep_hz`; dazu `insert_mode`, `paste_keys`, `newline` — leer heißt „wie allgemein" |
 | `vocabulary` | `term`, `variants`, `confusions`, `active` |
 | `send_vocabulary_to_whisper` | Begriffe als `prompt` an Whisper (nur `endpoint_type: openai`) |
 | `log_prompts` | schreibt den fertigen Systemprompt ins Protokoll |

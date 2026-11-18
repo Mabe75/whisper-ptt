@@ -3,6 +3,31 @@
 Das Format folgt lose [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern [SemVer](https://semver.org/lang/de/).
 
+## [2.1.3] – 2026-11-18
+
+### Neu
+
+* **Einfügekurzel frei wählbar** (`paste_keys`). Konsolen verstehen Strg+V oft nicht als
+  Einfügen, sondern nur Umschalt+Einfg – in Claude Code und ähnlichen Eingabemasken kam
+  der Text deshalb nicht an. Erlaubt sind Kombinationen aus Strg, Umschalt, Alt und Win mit
+  einer Taste, z. B. `shift+insert` oder `ctrl+shift+v`. Deutsche Schreibweisen wie
+  `umschalt+einfg` werden ebenfalls verstanden.
+* **Einfügeweg pro Profil.** `insert_mode`, `paste_keys` und `newline` lassen sich je Profil
+  abweichend einstellen; leer bedeutet weiterhin „wie allgemein“. Damit kann eine Taste für
+  das Terminal getippten Text liefern, während die übrigen beim Einfügen bleiben.
+* **Umbruchbehandlung** (`newline`). Im Tippmodus wurde aus jedem Zeilenumbruch ein Enter –
+  in einer Eingabemaske schickt das den Text mitten im Diktat ab. Neben `enter` gibt es nun
+  `space` (Umbrüche werden zu Leerzeichen, wirkt auch beim Einfügen) und `shift+enter`
+  (Umbruch ohne Abschicken).
+
+### Geändert
+
+* Der Einstellungsdialog zeigt die drei Werte als Spalten in der Profiltabelle und als
+  Vorgabe unter *Allgemein*. Unbrauchbare Kürzel werden beim Speichern gemeldet, statt
+  still auf Strg+V zurückzufallen.
+* Beim Start protokolliert das Programm die Profile, die vom allgemeinen Einfügeweg
+  abweichen.
+
 ## [2.1.2] – 2026-11-11
 
 ### Behoben

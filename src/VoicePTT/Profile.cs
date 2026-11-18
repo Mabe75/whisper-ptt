@@ -26,6 +26,16 @@ public class Profile
     /// <summary>Tonhöhe des Startsignals - macht das Profil hörbar unterscheidbar.</summary>
     [JsonPropertyName("beep_hz")] public int BeepHz { get; set; } = 660;
 
+    /// <summary>"paste", "type" oder leer für die allgemeine Einstellung.
+    /// Konsolen und Eingabemasken nehmen getippten Text oft zuverlässiger an.</summary>
+    [JsonPropertyName("insert_mode")] public string InsertMode { get; set; } = "";
+
+    /// <summary>Einfügekürzel nur für dieses Profil, z. B. "shift+insert"; leer = allgemein.</summary>
+    [JsonPropertyName("paste_keys")] public string PasteKeys { get; set; } = "";
+
+    /// <summary>Umbruchbehandlung nur für dieses Profil; leer = allgemein.</summary>
+    [JsonPropertyName("newline")] public string Newline { get; set; } = "";
+
     [JsonPropertyName("active")] public bool Active { get; set; } = true;
 
     public bool UsesLlm => string.Equals(Correction, "llm", StringComparison.OrdinalIgnoreCase);

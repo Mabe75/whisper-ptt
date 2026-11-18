@@ -20,25 +20,54 @@ public static class HotkeyNames
         ["caps lock"] = 0x14, ["capslock"] = 0x14,
         ["space"] = 0x20, ["insert"] = 0x2D, ["delete"] = 0x2E,
         ["end"] = 0x23, ["home"] = 0x24, ["num lock"] = 0x90, ["numlock"] = 0x90,
+        // Deutsche Schreibweisen: der Dialog zeigt sie an, also muessen sie auch
+        // eingetippt werden duerfen.
+        ["einfg"] = 0x2D, ["einfuegen"] = 0x2D, ["entf"] = 0x2E,
+        ["leertaste"] = 0x20, ["pos1"] = 0x24, ["ende"] = 0x23, ["eingabe"] = 0x0D,
         ["print screen"] = 0x2C, ["apps"] = 0x5D, ["menu"] = 0x5D,
     };
 
-    public static uint ToVirtualKey(string name)
+    /// <summary>Uebersetzt einen Tastennamen, ohne Rueckfall - fuer Angaben, die
+    /// stimmen muessen (z. B. Einfuegekuerzel).</summary>
+    public static bool TryToVirtualKey(string name, out uint vk)
     {
+        vk = 0;
         name = (name ?? "").Trim().ToLowerInvariant();
-        if (name.Length == 0) name = "f9";
-        if (Map.TryGetValue(name, out var vk)) return vk;
+        if (name.Length == 0) return false;
+
+        if (Map.TryGetValue(name, out vk)) return true;
+
+        if (name == "return" || name == "enter")
+        {
+            vk = 0x0D;
+            return true;
+        }
 
         if (name.Length > 1 && name[0] == 'f' && int.TryParse(name.Substring(1), out var fn) && fn >= 1 && fn <= 24)
-            return (uint)(0x70 + fn - 1);
+        {
+            vk = (uint)(0x70 + fn - 1);
+            return true;
+        }
 
         if (name.Length == 1)
         {
             var c = char.ToUpperInvariant(name[0]);
-            if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) return c;
+            if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
+            {
+                vk = c;
+                return true;
+            }
         }
 
-        Log.Write("Unbekannte Taste '" + name + "', nutze F9.");
+        return false;
+    }
+
+    public static uint ToVirtualKey(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return 0x78;
+        if (TryToVirtualKey(name, out var vk)) return vk;
+
+        Log.Write("Unbekannte Taste '" + name.Trim() + "', nutze F9.");
         return 0x78;
     }
 
