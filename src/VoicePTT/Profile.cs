@@ -38,8 +38,8 @@ public class Profile
 
     [JsonPropertyName("active")] public bool Active { get; set; } = true;
 
-    public bool UsesLlm => string.Equals(Correction, "llm", StringComparison.OrdinalIgnoreCase);
-    public bool UsesGatewayCorrection => string.Equals(Correction, "gateway", StringComparison.OrdinalIgnoreCase);
+    [JsonIgnore] public bool UsesLlm => string.Equals(Correction, "llm", StringComparison.OrdinalIgnoreCase);
+    [JsonIgnore] public bool UsesGatewayCorrection => string.Equals(Correction, "gateway", StringComparison.OrdinalIgnoreCase);
 
     public override string ToString() => HotkeyNames.Display(Hotkey) + " · " + Name;
 

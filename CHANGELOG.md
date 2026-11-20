@@ -3,6 +3,23 @@
 Das Format folgt lose [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern [SemVer](https://semver.org/lang/de/).
 
+## [2.1.4] – 2026-11-20
+
+### Behoben
+
+* **Der Einstellungsdialog löschte den Einfügeweg der Profile.** Beim Öffnen kopierte er
+  jedes Profil, ließ dabei aber `insert_mode`, `paste_keys` und `newline` aus – beim
+  Speichern standen sie wieder leer. Ein Profil fürs Terminal fiel damit auf Strg+V
+  zurück und kam in Konsolen nicht mehr an. Betroffen war allein 2.1.3; wer ein Profil
+  mit abweichendem Einfügeweg hat, muss ihn nach dem Update einmal neu eintragen.
+* Die berechneten Felder `UsesLlm` und `UsesGatewayCorrection` wurden in `config.json`
+  mitgeschrieben, obwohl sie nie gelesen werden. Sie bleiben jetzt draußen.
+
+### Neu
+
+* Ein Test prüft, dass die Profilkopie im Dialog jedes Feld mitnimmt (`tests\ProfileClone`).
+  Er läuft über Reflexion über alle Felder und schlägt an, sobald ein neues vergessen wird.
+
 ## [2.1.3] – 2026-11-18
 
 ### Neu

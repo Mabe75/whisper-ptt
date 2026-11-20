@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Faellt der Test aus, verliert der Einstellungsdialog beim Speichern
+       Profilfelder - genau der Fehler aus 2.1.3. Aufruf: dotnet run -c Release -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>ProfileClone</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\VoicePTT\VoicePTT.csproj" />
+  </ItemGroup>
+
+</Project>

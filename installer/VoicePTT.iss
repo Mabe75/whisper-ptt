@@ -1,11 +1,11 @@
-; Inno Setup Skript fuer Voice Push-to-Talk
+﻿; Inno Setup Skript fuer Voice Push-to-Talk
 ; Erzeugt einen vollstaendig offline arbeitenden Installer:
 ; die .NET-Laufzeit ist im Programmordner enthalten, es wird nichts nachgeladen.
 
 #define MyAppName "Voice Push-to-Talk"
 ; Kann beim Aufruf ueberschrieben werden: ISCC /DMyAppVersion=2.0.1 VoicePTT.iss
 #ifndef MyAppVersion
-  #define MyAppVersion "2.1.3"
+  #define MyAppVersion "2.1.4"
 #endif
 #define MyAppPublisher "lokal"
 #define MyAppExeName "VoicePTT.exe"

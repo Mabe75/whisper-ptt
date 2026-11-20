@@ -104,6 +104,9 @@ public sealed class SettingsForm : Form
         Thinking = p.Thinking,
         Replacements = p.Replacements,
         BeepHz = p.BeepHz,
+        InsertMode = p.InsertMode,
+        PasteKeys = p.PasteKeys,
+        Newline = p.Newline,
         Active = p.Active,
     };
 
